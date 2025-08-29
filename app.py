@@ -1,8 +1,12 @@
-from fastapi import FastAPI, Depends
+from dotenv import load_dotenv
+load_dotenv()
+from fastapi import FastAPI, Depends,dependencies
+from fastapi import UploadFile
 from src.shared.constants import version,title,description
 from src.services.upload_file_service import process_pdf_file
 from src.models.upload_file_models import UploadFileRequest
 from src.middlewares.verify_api_key import verify_api_key
+from src.middlewares.validate_upload_file import validate_uploaded_file
 
 app = FastAPI(version=version,title=title,description=description)
 
@@ -10,6 +14,6 @@ app = FastAPI(version=version,title=title,description=description)
 async def root():
     return {"message": "Server running","version":version}
 
-@app.post("/upload",dependencies==[Depends(verify_api_key)])
-async def upload_file(request: UploadFileRequest):
+@app.post("/upload")
+async def upload_file(file: UploadFile = Depends(validate_uploaded_file),_: None = Depends(verify_api_key)):
     return process_pdf_file()
