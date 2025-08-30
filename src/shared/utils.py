@@ -49,3 +49,32 @@ def is_scanned_or_empty(documents, empty_threshold: float = 0.05) -> bool:
 
     empty_ratio = empty_pages / total_pages
     return empty_ratio >= empty_threshold
+
+def chunk_document_by_tokens(documents: List[Any], max_tokens: int = file_total_token_limit, overlap_tokens: int = overlap_tokens_count) -> List[dict]:
+    from tiktoken import encoding_for_model
+    from src.shared.utils import embedding_supported_model
+
+    # Combine all text into a single string
+    full_text = " ".join([doc.page_content for doc in documents if hasattr(doc, 'page_content') and doc.page_content])
+
+    # Tokenize full text
+    enc = encoding_for_model(model_name=embedding_supported_model)
+    tokens = enc.encode(full_text)
+
+    chunks = []
+    start = 0
+    total_tokens = len(tokens)
+
+    while start < total_tokens:
+        end = start + max_tokens
+        chunk_tokens = tokens[start:end]
+        chunk_text = enc.decode(chunk_tokens)
+        chunks.append({
+            "content": chunk_text,
+            "token_count": len(chunk_tokens)
+        })
+        start = end - overlap_tokens
+        if start < 0:
+            start = 0
+
+    return chunks
