@@ -1,6 +1,7 @@
 import os
+import uuid
 import tiktoken
-from src.shared.constants import supported_model
+from src.shared.constants import embedding_supported_model,empty_page_threshold,overlap_tokens_count,file_total_token_limit
 from fastapi import HTTPException
 from typing import List, Any
 
@@ -11,10 +12,13 @@ def get_env_variable(var_name: str) -> str:
         raise HTTPException(status_code=400,detail=f"{var_name} not found")
     return value.strip()
 
+def generate_file_uuid()->int:
+    return uuid.uuid4()
+
 def tokenize_document(document : List[Any]) -> int:
     try:
         # Get the encoding for the supported model
-        enc = tiktoken.encoding_for_model(model_name=supported_model)
+        enc = tiktoken.encoding_for_model(model_name=embedding_supported_model)
         
         total_tokens = 0
         
@@ -29,6 +33,8 @@ def tokenize_document(document : List[Any]) -> int:
         
     except Exception as e:
         print(f"Error tokenizing document: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error tokenizing document: {str(e)}")  
+    
 def is_scanned_or_empty(documents, empty_threshold: float = 0.05) -> bool:
     if not documents:
         return True
