@@ -29,4 +29,17 @@ def tokenize_document(document : List[Any]) -> int:
         
     except Exception as e:
         print(f"Error tokenizing document: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error tokenizing document: {str(e)}")
+def is_scanned_or_empty(documents, empty_threshold: float = 0.05) -> bool:
+    if not documents:
+        return True
+
+    total_pages = len(documents)
+    empty_pages = 0
+
+    for doc in documents:
+        text = doc.page_content.strip()
+        if len(text) < empty_page_threshold:  
+            empty_pages += 1
+
+    empty_ratio = empty_pages / total_pages
+    return empty_ratio >= empty_threshold
