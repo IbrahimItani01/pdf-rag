@@ -10,5 +10,6 @@ file_total_token_limit = 1000
 overlap_tokens_count = 100
 empty_page_threshold = 20
 
+pinecone_index_name="pdf-rag-index"
 
 embedding_supported_model= "text-embedding-3-small"
