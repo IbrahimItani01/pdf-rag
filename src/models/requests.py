@@ -5,3 +5,9 @@ class UserRegisterRequest(BaseModel):
     user_email: str
     user_password: str 
     user_openai_api_key: str
+    
+class UserInfoFromJWT(BaseModel):
+    user_id: str
+    email: str
+    session_id: str
+    role:str
