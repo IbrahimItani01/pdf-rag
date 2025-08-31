@@ -3,7 +3,6 @@ import uuid
 import tiktoken
 import psycopg2
 from src.shared.constants import embedding_supported_model,empty_page_threshold,overlap_tokens_count,file_total_token_limit
-from src.shared.utils import get_env_variable
 from fastapi import HTTPException
 from typing import List, Any
 
