@@ -22,6 +22,7 @@ class UserLoginResponse(BaseModel):
     version: str
     openai_api_key: str
     user_name: str
+    refresh_token: str
 
 class HealthResponse(BaseModel):
     message: str
