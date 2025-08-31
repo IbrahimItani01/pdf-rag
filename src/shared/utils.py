@@ -2,9 +2,23 @@ import os
 import uuid
 import tiktoken
 import psycopg2
+import requests
 from src.shared.constants import embedding_supported_model,empty_page_threshold,overlap_tokens_count,file_total_token_limit
 from fastapi import HTTPException
 from typing import List, Any
+from jose import jwt
+from src.shared.constants import jwks_url
+
+JWKS = requests.get(jwks_url).json()
+
+def get_signing_key(token):
+    headers = jwt.get_unverified_header(token)
+    kid = headers.get("kid")
+    for key in JWKS["keys"]:
+        if key["kid"] == kid:
+            return key
+    raise HTTPException(status_code=401, detail="Invalid token")
+
 
 def get_env_variable(var_name: str) -> str:
     value = os.getenv(var_name)
