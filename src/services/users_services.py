@@ -46,10 +46,12 @@ def login_user(request: Request, user: UserLoginRequest) -> UserLoginResponse:
             "password": user.user_password,
         })
         user_token=response.session.access_token
+        refresh_token=response.session.refresh_token
         user_metadata=response.session.user.user_metadata
         return UserLoginResponse(
             message="User Logged In Successfully",
             user_token=user_token,
+            refresh_token=refresh_token,
             openai_api_key=user_metadata.user_openai_key,
             user_name=user_metadata.user_name,
             version=request.app.version
