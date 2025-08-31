@@ -16,6 +16,13 @@ class UserRegisterResponse(BaseModel):
     user_token: str | None
     version: str
 
+class UserLoginResponse(BaseModel):
+    message: str
+    user_token: str
+    version: str
+    openai_api_key: str
+    user_name: str
+
 class HealthResponse(BaseModel):
     message: str
     version: str
