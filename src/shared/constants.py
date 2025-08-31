@@ -16,3 +16,6 @@ embedding_supported_model= "text-embedding-3-small"
 
 # TODO: change when ui login is done :)
 email_confirm_redirect_url = "http://127.0.0.1:8000/health"
+
+supabase_project_id = "meqqmoriaexmjnqchjmk"
+jwks_url = f"https://{supabase_project_id}.supabase.co/auth/v1/.well-known/jwks.json"
