@@ -9,4 +9,4 @@ app = FastAPI(version=version, title=title, description=description)
 
 app.include_router(health_route.router)
 app.include_router(files_route.router)
-app.include_router(users_route)
+app.include_router(users_route.router)
