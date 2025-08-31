@@ -10,6 +10,11 @@ class UploadFileResponse(BaseModel):
     message: str
     metadata: ProcessingMetadata
     version: str
+    
+class UserRegisterResponse(BaseModel):
+    message: str
+    user_token: str
+    version: str
 
 class HealthResponse(BaseModel):
     message: str
