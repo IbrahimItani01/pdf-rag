@@ -1,6 +1,6 @@
 from fastapi import Request, HTTPException
-from src.models.requests import UserRegisterRequest
-from src.models.responses import UserRegisterResponse
+from src.models.requests import UserRegisterRequest,UserLoginRequest
+from src.models.responses import UserRegisterResponse,UserLoginResponse
 from src.services.gateway_services import supabase_client
 from src.shared.constants import email_confirm_redirect_url
  
@@ -37,3 +37,23 @@ def register_user(request: Request, user: UserRegisterRequest) -> UserRegisterRe
     except Exception as e:
         print(f"Error while registering user: {e}")
         raise HTTPException(status_code=500, detail=f"Error while registering user: {e}")
+
+def login_user(request: Request, user: UserLoginRequest) -> UserLoginResponse:
+    try:
+        response = supabase_client.auth.sign_in_with_password(
+        {
+            "email": user.user_email,
+            "password": user.user_password,
+        })
+        user_token=response.session.access_token
+        user_metadata=response.session.user.user_metadata
+        return UserLoginResponse(
+            message="User Logged In Successfully",
+            user_token=user_token,
+            openai_api_key=user_metadata.user_openai_key,
+            user_name=user_metadata.user_name,
+            version=request.app.version
+        )
+    except Exception as e:
+        print(f"Error Logging In User: {e}")
+        raise HTTPException(status_code=500,detail=f"Error Logging In User: {e}")
