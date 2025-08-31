@@ -1,7 +1,9 @@
 import os
 import uuid
 import tiktoken
+import psycopg2
 from src.shared.constants import embedding_supported_model,empty_page_threshold,overlap_tokens_count,file_total_token_limit
+from src.shared.utils import get_env_variable
 from fastapi import HTTPException
 from typing import List, Any
 
@@ -78,3 +80,38 @@ def chunk_document_by_tokens(documents: List[Any], max_tokens: int = file_total_
             start = 0
 
     return chunks
+
+def query_cursor(query: str):
+    USER = get_env_variable("DB_USER")
+    PASSWORD = get_env_variable("DB_PASSWORD")
+    HOST = get_env_variable("DB_HOST")
+    PORT = get_env_variable("DB_PORT")
+    DBNAME = get_env_variable("DB_NAME")
+
+    try:
+        connection = psycopg2.connect(
+            user=USER,
+            password=PASSWORD,
+            host=HOST,
+            port=PORT,
+            dbname=DBNAME
+        )
+        
+        cursor = connection.cursor()
+        cursor.execute(query)
+
+        # If the query returns rows, fetch them
+        if cursor.description:  # cursor.description is None if it's an INSERT/UPDATE/DELETE
+            result = cursor.fetchall()
+        else:
+            result = None
+            connection.commit()  # commit if it was a write operation
+
+        cursor.close()
+        connection.close()
+
+        return result
+
+    except Exception as e:
+        print(f"Failed to connect to DB: {e}")
+        return None
