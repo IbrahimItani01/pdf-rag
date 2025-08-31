@@ -6,8 +6,9 @@ from src.services.gateway_services import openai_client,pc_client
 from langchain_community.document_loaders import PyPDFLoader
 from src.shared.utils import tokenize_document,generate_file_uuid,is_scanned_or_empty,chunk_document_by_tokens
 from src.shared.constants import file_total_token_limit,embedding_supported_model,pinecone_index_name
+from src.models.requests import UserInfoFromJWT
 
-def process_pdf_file(request: Request,file: UploadFile):
+def process_pdf_file(request: Request,file: UploadFile,user_info:UserInfoFromJWT):
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp_file:
         temp_file.write(file.file.read())
         temp_file_path = temp_file.name
@@ -27,7 +28,7 @@ def process_pdf_file(request: Request,file: UploadFile):
             chunks = chunk_document_by_tokens(documents)
             print(f"PDF split into {len(chunks)} chunks, each <= {file_total_token_limit} tokens.")
 
-        stored_chunks = store_chunks_with_embeddings(chunks, file_uuid, file.filename)
+        stored_chunks = store_chunks_with_embeddings(chunks, file_uuid, file.filename,user_info=user_info)
         return {
             "message": "PDF processed successfully", 
             "metadata": {
@@ -41,8 +42,8 @@ def process_pdf_file(request: Request,file: UploadFile):
     finally:
         os.unlink(temp_file_path)
         
-def store_chunks_with_embeddings(chunks: List, doc_id: str, filename: str) -> List[Dict]:
-    index = pc_client.Index(pinecone_index_name)
+def store_chunks_with_embeddings(chunks: List, doc_id: str, filename: str,user_info:UserInfoFromJWT) -> List[Dict]:
+    index = pc_client.Index(pinecone_index_name).namespace(user_info.user_id)
     vectors_to_upsert = []
     stored_chunks = []
     
