@@ -13,7 +13,7 @@ class UploadFileResponse(BaseModel):
     
 class UserRegisterResponse(BaseModel):
     message: str
-    user_token: str
+    user_token: str | None
     version: str
 
 class HealthResponse(BaseModel):
