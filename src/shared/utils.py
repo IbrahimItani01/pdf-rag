@@ -5,12 +5,21 @@ import requests
 from fastapi import HTTPException
 from typing import List, Any
 from jose import jwt
-from src.shared.constants import embedding_supported_model,empty_page_threshold,overlap_tokens_count,file_total_token_limit
+from src.shared.constants import embedding_supported_model,empty_page_threshold,overlap_tokens_count,file_total_token_limit,base_prompt
 from src.services.gateway_services import fernet
+from src.services.gateway_services import return_openai_client
 from src.shared.env import get_env_variable
+from src.models.requests import UserInfoFromJWT
 
 def generate_file_uuid()->int:
     return uuid.uuid4()
+
+def build_prompt(question: str, context_chunks: List[str]) -> str:
+    """
+    Build a prompt for the LLM given a question and retrieved context.
+    """
+    context_text = "\n".join(context_chunks) if context_chunks else "No relevant context found."
+    return base_prompt.format(question=question, context=context_text)
 
 def tokenize_document(document : List[Any]) -> int:
     try:
@@ -113,3 +122,28 @@ def query_cursor(query: str):
     
 def decrypt_encryption (encryption: str) -> str:
     return fernet.decrypt(encryption.encode()).decode()
+
+def create_embedding_for_chunk(content: str, user_info: UserInfoFromJWT) -> List[float]:
+    """
+    Create embedding for a text chunk
+    """
+    try:
+        encrypted_openai_key = user_info['user_openai_key']
+        decrypted_openai_key = decrypt_encryption(encryption=encrypted_openai_key)
+        openai_client = return_openai_client(decrypted_openai_key)
+        response = openai_client.embeddings.create(
+            input=content,
+            model=embedding_supported_model
+        )
+        return response.data[0].embedding
+    except Exception as e:
+        print(f"Error creating embedding: {e}")
+        error_msg = str(e)
+        if "401" in error_msg or "invalid_api_key" in error_msg:
+            raise HTTPException(status_code=401, detail="Invalid OpenAI API key")
+        elif "429" in error_msg:
+            raise HTTPException(status_code=429, detail="OpenAI API rate limit exceeded")
+        elif "quota" in error_msg.lower():
+            raise HTTPException(status_code=402, detail="OpenAI API quota exceeded")
+        else:
+            raise HTTPException(status_code=500, detail=f"Failed to create embedding: {error_msg}")
