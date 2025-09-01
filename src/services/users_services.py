@@ -1,18 +1,23 @@
 from fastapi import Request, HTTPException
+from cryptography.fernet import Fernet
 from src.models.requests import UserRegisterRequest,UserLoginRequest
 from src.models.responses import UserRegisterResponse,UserLoginResponse
 from src.services.gateway_services import supabase_client
 from src.shared.constants import email_confirm_redirect_url
- 
+from src.shared.utils import get_env_variable
+
+fernet = Fernet(get_env_variable("FERNET_ENCRYPTION_KEY"))
+
 def register_user(request: Request, user: UserRegisterRequest) -> UserRegisterResponse:
     try: 
+        encrypted_openai_key = fernet.encrypt(user.user_openai_api_key.encode()).decode()
         data = supabase_client.auth.sign_up({
             "email": user.user_email,
             "password": user.user_password,
             "options": {
                 "data": {
                     "user_name": user.user_name,
-                    "user_openai_key": user.user_openai_api_key,
+                    "user_openai_key": encrypted_openai_key,
                 },
                 "email_redirect_to": email_confirm_redirect_url
             }
@@ -52,8 +57,8 @@ def login_user(request: Request, user: UserLoginRequest) -> UserLoginResponse:
             message="User Logged In Successfully",
             user_token=user_token,
             refresh_token=refresh_token,
-            openai_api_key=user_metadata.user_openai_key,
-            user_name=user_metadata.user_name,
+            openai_api_key=user_metadata["user_openai_key"],
+            user_name=user_metadata["user_name"],
             version=request.app.version
         )
     except Exception as e:
