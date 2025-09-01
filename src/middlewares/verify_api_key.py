@@ -1,6 +1,6 @@
 from fastapi import Request, Depends, HTTPException
 from fastapi.security import APIKeyHeader
-from src.shared.utils import get_env_variable
+from src.shared.env import get_env_variable
 
 api_key_header = APIKeyHeader(name="x-api-key",auto_error=False,description="An authentication for APIs using api key")
 

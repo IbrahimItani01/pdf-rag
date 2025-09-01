@@ -12,14 +12,14 @@ router = APIRouter(
 )
 
 @router.post("/register", response_model=UserRegisterResponse)
-async def upload_file(
+async def register_user_endpoint(
     request: Request,
     user_data: UserRegisterRequest = Depends(validate_user_register_data),
 ):
     return register_user(request,user_data)
 
 @router.post("/login", response_model=UserLoginResponse)
-async def upload_file(
+async def login_user_endpoint(
     request: Request,
     user_data: UserLoginRequest,
 ):

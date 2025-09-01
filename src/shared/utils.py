@@ -1,21 +1,13 @@
-import os
 import uuid
 import tiktoken
 import psycopg2
 import requests
-from src.shared.constants import embedding_supported_model,empty_page_threshold,overlap_tokens_count,file_total_token_limit
 from fastapi import HTTPException
 from typing import List, Any
 from jose import jwt
-from src.shared.constants import jwks_url
-
-JWKS = requests.get(jwks_url).json()
-def get_env_variable(var_name: str) -> str:
-    value = os.getenv(var_name)
-    if value is None:
-        print(f"{var_name} not found")
-        raise HTTPException(status_code=400,detail=f"{var_name} not found")
-    return value.strip()
+from src.shared.constants import embedding_supported_model,empty_page_threshold,overlap_tokens_count,file_total_token_limit
+from src.services.gateway_services import fernet
+from src.shared.env import get_env_variable
 
 def generate_file_uuid()->int:
     return uuid.uuid4()
@@ -118,3 +110,6 @@ def query_cursor(query: str):
     except Exception as e:
         print(f"Failed to connect to DB: {e}")
         return None
+    
+def decrypt_encryption (encryption: str) -> str:
+    return fernet.decrypt(encryption.encode()).decode()
