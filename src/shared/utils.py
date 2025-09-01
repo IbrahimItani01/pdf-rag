@@ -10,16 +10,6 @@ from jose import jwt
 from src.shared.constants import jwks_url
 
 JWKS = requests.get(jwks_url).json()
-
-def get_signing_key(token):
-    headers = jwt.get_unverified_header(token)
-    kid = headers.get("kid")
-    for key in JWKS["keys"]:
-        if key["kid"] == kid:
-            return key
-    raise HTTPException(status_code=401, detail="Invalid token")
-
-
 def get_env_variable(var_name: str) -> str:
     value = os.getenv(var_name)
     if value is None:
