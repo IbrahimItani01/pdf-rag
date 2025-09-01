@@ -1,12 +1,9 @@
 from fastapi import Request, HTTPException
-from cryptography.fernet import Fernet
 from src.models.requests import UserRegisterRequest,UserLoginRequest
 from src.models.responses import UserRegisterResponse,UserLoginResponse
-from src.services.gateway_services import supabase_client
+from src.services.gateway_services import supabase_client,fernet
 from src.shared.constants import email_confirm_redirect_url
-from src.shared.utils import get_env_variable
-
-fernet = Fernet(get_env_variable("FERNET_ENCRYPTION_KEY"))
+from src.shared.env import get_env_variable
 
 def register_user(request: Request, user: UserRegisterRequest) -> UserRegisterResponse:
     try: 
