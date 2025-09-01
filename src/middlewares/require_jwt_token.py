@@ -2,7 +2,7 @@ import requests
 from datetime import datetime,timezone
 from fastapi import Request, HTTPException
 from jose import jwt
-from src.shared.utils import get_env_variable
+from src.shared.env import get_env_variable
 from src.models.requests import UserInfoFromJWT
 def validate_jwt_and_session(request: Request) -> UserInfoFromJWT:
     """Global dependency: validates JWT signature and session expiry"""
@@ -18,12 +18,13 @@ def validate_jwt_and_session(request: Request) -> UserInfoFromJWT:
     except jwt.JWTError as e:
         print(e)
         raise HTTPException(status_code=401, detail="Invalid token")
-
     exp = decoded["exp"]
     sub = decoded["sub"]
     session_id = decoded["session_id"]
     role = decoded["role"]
     email = decoded["email"]
+    openai_key = decoded["user_metadata"]["user_openai_key"]
+    user_name = decoded["user_metadata"]["user_name"]
     if not exp:
         raise HTTPException(status_code=401, detail="Token missing expiry claim")
     
@@ -35,6 +36,8 @@ def validate_jwt_and_session(request: Request) -> UserInfoFromJWT:
         "user_id":sub,
         "email":email,
         "session_id":session_id,
-        "role":role
+        "role":role,
+        "user_openai_key": openai_key,
+        "user_name": user_name
     }
    

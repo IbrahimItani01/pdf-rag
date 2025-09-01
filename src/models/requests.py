@@ -15,3 +15,5 @@ class UserInfoFromJWT(BaseModel):
     email: str
     session_id: str
     role:str
+    user_name: str
+    user_openai_key: str
