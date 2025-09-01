@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-
+from typing import List
 class ProcessingMetadata(BaseModel):
     pages: int
     token_count: int
@@ -11,6 +11,13 @@ class UploadFileResponse(BaseModel):
     metadata: ProcessingMetadata
     version: str
     
+class Source(BaseModel):
+    doc_id: str
+    page: int
+
+class QueryFileResponse(BaseModel):
+    answer: str
+    sources: List[Source]
 class UserRegisterResponse(BaseModel):
     message: str
     user_token: str | None

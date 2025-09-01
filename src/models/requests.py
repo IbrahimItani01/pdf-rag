@@ -6,6 +6,10 @@ class UserRegisterRequest(BaseModel):
     user_password: str 
     user_openai_api_key: str
     
+class QueryFileRequest(BaseModel):
+    question: str
+    top_k: int | None = None
+    
 class UserLoginRequest(BaseModel):
     user_email: str
     user_password: str
