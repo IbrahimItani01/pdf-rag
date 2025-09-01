@@ -13,6 +13,8 @@ RUN apt-get update && apt-get install -y \
 # 4. Copy requirements file first (for caching)
 COPY requirements.txt .
 
+RUN pip install psycopg2
+
 # 5. Install Python dependencies
 RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -r requirements.txt
