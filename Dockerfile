@@ -4,16 +4,16 @@ FROM python:3.11-slim
 # 2. Set working directory
 WORKDIR /app
 
-# 3. Install system dependencies
+# 3. Install system dependencies including PostgreSQL dev packages
 RUN apt-get update && apt-get install -y \
     build-essential \
     curl \
+    libpq-dev \
+    postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
 # 4. Copy requirements file first (for caching)
 COPY requirements.txt .
-
-RUN pip install psycopg2
 
 # 5. Install Python dependencies
 RUN pip install --no-cache-dir --upgrade pip \
