@@ -13,6 +13,7 @@ dataclasses-json==0.6.7
 deprecation==2.1.0
 distro==1.9.0
 dnspython==2.7.0
+ecdsa==0.19.1
 email-validator==2.3.0
 fastapi==0.116.1
 fastapi-cli==0.0.8
@@ -52,6 +53,7 @@ pinecone-plugin-interface==0.0.7
 postgrest==1.1.1
 propcache==0.3.2
 psycopg2==2.9.10
+pyasn1==0.6.1
 pycparser==2.22
 pydantic==2.11.7
 pydantic-settings==2.10.1
@@ -61,6 +63,7 @@ PyJWT==2.10.1
 pypdf==6.0.0
 python-dateutil==2.9.0.post0
 python-dotenv==1.1.1
+python-jose==3.5.0
 python-multipart==0.0.20
 PyYAML==6.0.2
 realtime==2.7.0
@@ -70,6 +73,7 @@ requests-toolbelt==1.0.0
 rich==14.1.0
 rich-toolkit==0.15.0
 rignore==0.6.4
+rsa==4.9.1
 sentry-sdk==2.35.1
 shellingham==1.5.4
 six==1.17.0
