@@ -4,7 +4,7 @@ from typing import List, Dict
 from fastapi import UploadFile, Request, HTTPException
 from src.services.gateway_services import return_openai_client, pc_client, fernet
 from langchain_community.document_loaders import PyPDFLoader
-from src.shared.utils import tokenize_document, generate_file_uuid, is_scanned_or_empty, chunk_document_by_tokens, decrypt_encryption
+from src.shared.utils import tokenize_document, generate_file_uuid, is_scanned_or_empty, chunk_document_by_tokens, decrypt_encryption, create_embedding_for_chunk
 from src.shared.constants import file_total_token_limit, embedding_supported_model, pinecone_index_name
 from src.models.requests import UserInfoFromJWT
 
@@ -80,7 +80,8 @@ def store_chunks_with_embeddings(chunks: List, doc_id: str, filename: str, user_
                 "page_num": page_num,
                 "chunk_index": chunk_index,
                 "original_text": content[:1000],  # Truncate if too long for metadata
-                "token_count": len(content.split()) * 1.3  # Rough token estimate
+                "token_count": len(content.split()) * 1.3, # Rough token estimate
+                "user_id": user_info["user_id"]   # <-- Add this
             }
             
             # Prepare vector for upsert
@@ -123,27 +124,3 @@ def store_chunks_with_embeddings(chunks: List, doc_id: str, filename: str, user_
     
     return stored_chunks
 
-def create_embedding_for_chunk(content: str, user_info: UserInfoFromJWT) -> List[float]:
-    """
-    Create embedding for a text chunk
-    """
-    try:
-        encrypted_openai_key = user_info['user_openai_key']
-        decrypted_openai_key = decrypt_encryption(encryption=encrypted_openai_key)
-        openai_client = return_openai_client(decrypted_openai_key)
-        response = openai_client.embeddings.create(
-            input=content,
-            model=embedding_supported_model
-        )
-        return response.data[0].embedding
-    except Exception as e:
-        print(f"Error creating embedding: {e}")
-        error_msg = str(e)
-        if "401" in error_msg or "invalid_api_key" in error_msg:
-            raise HTTPException(status_code=401, detail="Invalid OpenAI API key")
-        elif "429" in error_msg:
-            raise HTTPException(status_code=429, detail="OpenAI API rate limit exceeded")
-        elif "quota" in error_msg.lower():
-            raise HTTPException(status_code=402, detail="OpenAI API quota exceeded")
-        else:
-            raise HTTPException(status_code=500, detail=f"Failed to create embedding: {error_msg}")
