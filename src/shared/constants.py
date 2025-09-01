@@ -13,8 +13,19 @@ empty_page_threshold = 20
 pinecone_index_name="pdf-rag-index"
 
 embedding_supported_model= "text-embedding-3-small"
+completion_supported_model= "gpt-5-nano"
 
 # TODO: change when ui login is done :)
 email_confirm_redirect_url = "http://127.0.0.1:8000/health"
 
 supabase_project_id = "meqqmoriaexmjnqchjmk"
+
+base_prompt = """You are an assistant that answers based on the provided context.
+If the answer isn’t in the context, just say something like:
+"Sorry, I couldn’t find that in the provided information."
+
+Question: {question}
+
+Context:
+{context}
+"""
