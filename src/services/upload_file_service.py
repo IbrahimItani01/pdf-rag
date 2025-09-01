@@ -43,7 +43,7 @@ def process_pdf_file(request: Request,file: UploadFile,user_info:UserInfoFromJWT
         os.unlink(temp_file_path)
         
 def store_chunks_with_embeddings(chunks: List, doc_id: str, filename: str,user_info:UserInfoFromJWT) -> List[Dict]:
-    index = pc_client.Index(pinecone_index_name).namespace(user_info.user_id)
+    index = pc_client.Index(pinecone_index_name)
     vectors_to_upsert = []
     stored_chunks = []
     
@@ -63,7 +63,7 @@ def store_chunks_with_embeddings(chunks: List, doc_id: str, filename: str,user_i
             embedding = create_embedding_for_chunk(content)
             
             # Create unique vector ID
-            vector_id = f"{doc_id}_{chunk_index}"
+            vector_id = f"{user_info['user_id']}_{doc_id}_{chunk_index}"
             
             # Prepare metadata for Pinecone
             metadata = {
