@@ -50,6 +50,12 @@ def login_user(request: Request, user: UserLoginRequest) -> UserLoginResponse:
         user_token=response.session.access_token
         refresh_token=response.session.refresh_token
         user_metadata=response.session.user.user_metadata
+        user_id = response.session.user.id
+        response = (
+            supabase_client.table("users")
+            .insert({"id": user_id, "refresh_token": refresh_token})
+            .execute()
+        )   
         return UserLoginResponse(
             message="User Logged In Successfully",
             user_token=user_token,
