@@ -31,6 +31,10 @@ class UserLoginResponse(BaseModel):
     user_name: str
     refresh_token: str
 
+class AccountDeleteResponse(BaseModel):
+    message: str
+    version: str
+
 class HealthResponse(BaseModel):
     message: str
     version: str

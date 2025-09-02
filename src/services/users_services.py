@@ -1,9 +1,10 @@
 from fastapi import Request, HTTPException
-from src.models.requests import UserRegisterRequest,UserLoginRequest
-from src.models.responses import UserRegisterResponse,UserLoginResponse
+from src.models.requests import UserRegisterRequest,UserLoginRequest,UserInfoFromJWT
+from src.models.responses import UserRegisterResponse,UserLoginResponse,AccountDeleteResponse
 from src.services.gateway_services import supabase_client,fernet
 from src.shared.constants import email_confirm_redirect_url
 from src.shared.env import get_env_variable
+from src.shared.utils import query_user_refresh_token,delete_all_user_vectors
 
 def register_user(request: Request, user: UserRegisterRequest) -> UserRegisterResponse:
     try: 
@@ -51,11 +52,13 @@ def login_user(request: Request, user: UserLoginRequest) -> UserLoginResponse:
         refresh_token=response.session.refresh_token
         user_metadata=response.session.user.user_metadata
         user_id = response.session.user.id
-        response = (
-            supabase_client.table("users")
-            .insert({"id": user_id, "refresh_token": refresh_token})
-            .execute()
-        )   
+        user_exists = supabase_client.table("users").select("id").eq("id",user_id).execute()
+        if user_exists.data is None:
+            response = (
+                supabase_client.table("users")
+                .insert({"id": user_id, "refresh_token": refresh_token})
+                .execute()
+            )   
         return UserLoginResponse(
             message="User Logged In Successfully",
             user_token=user_token,
@@ -67,3 +70,25 @@ def login_user(request: Request, user: UserLoginRequest) -> UserLoginResponse:
     except Exception as e:
         print(f"Error Logging In User: {e}")
         raise HTTPException(status_code=500,detail=f"Error Logging In User: {e}")
+
+def delete_user_account(request: Request,user_info:UserInfoFromJWT) -> AccountDeleteResponse:
+    try:
+        user_id = user_info["user_id"]
+        delete_all_user_vectors(user_id)
+        response = (
+            supabase_client.table("users")
+            .delete()
+            .eq("id", user_id)
+            .execute()
+        )
+        supabase_client.auth.admin.delete_user(
+            user_id
+        )
+        return AccountDeleteResponse(
+            message="User Account Deleted Successfully",
+            version=request.app.version
+        )
+    except Exception as e:
+        print(f"Error Deleting User Account: {e}")
+        raise HTTPException(status_code=500,detail=f"Error Deleting User Account: {e}")
+    

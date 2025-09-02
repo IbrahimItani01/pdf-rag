@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Request, Depends
-from src.models.requests import UserRegisterRequest,UserLoginRequest
-from src.services.users_services import register_user,login_user
+from src.models.requests import UserRegisterRequest,UserLoginRequest,UserInfoFromJWT
+from src.services.users_services import register_user,login_user,delete_user_account
 from src.middlewares.verify_api_key import verify_api_key
 from src.middlewares.validate_user_data import validate_user_register_data
-from src.models.responses import UserRegisterResponse, UserLoginResponse
+from src.middlewares.require_jwt_token import validate_jwt_and_session
+from src.models.responses import UserRegisterResponse, UserLoginResponse,AccountDeleteResponse
 
 router = APIRouter(
     prefix="/users",       
@@ -24,3 +25,10 @@ async def login_user_endpoint(
     user_data: UserLoginRequest,
 ):
     return login_user(request,user_data)
+
+@router.post("/delete-account", response_model=AccountDeleteResponse)
+async def delete_account_endpoint(
+    request: Request,
+    user_info: UserInfoFromJWT = Depends(validate_jwt_and_session),
+):
+    return delete_user_account(request,user_info)

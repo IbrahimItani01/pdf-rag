@@ -52,9 +52,11 @@ def process_file_query(request: Request, query_info: QueryFileRequest, user_info
         response = openai_client.chat.completions.create(
             model=completion_supported_model,
             messages=[
-                {"role": "system", "content": prompt},
+                {"role": "system", "content": "You are a helpful assistant answering based on provided documents."},
+                {"role": "user", "content": prompt},
             ]
         )
+
 
         answer = response.choices[0].message.content.strip()
 

@@ -5,8 +5,8 @@ import requests
 from fastapi import HTTPException,Request,Response
 from typing import List, Any
 from jose import jwt
-from src.shared.constants import embedding_supported_model,empty_page_threshold,overlap_tokens_count,file_total_token_limit,base_prompt
-from src.services.gateway_services import fernet,supabase_client
+from src.shared.constants import embedding_supported_model,empty_page_threshold,overlap_tokens_count,file_total_token_limit,base_prompt,pinecone_index_name
+from src.services.gateway_services import fernet,supabase_client,pc_client
 from src.services.gateway_services import return_openai_client
 from src.shared.env import get_env_variable
 from src.models.requests import UserInfoFromJWT
@@ -149,12 +149,13 @@ def create_embedding_for_chunk(content: str, user_info: UserInfoFromJWT) -> List
             raise HTTPException(status_code=500, detail=f"Failed to create embedding: {error_msg}")
         
 def query_user_refresh_token(user_id:str):
-    try:
-        response = supabase_client.table("users").select("refresh_token").eq("id",user_id).execute()
-        return response.data[0].refresh_token
-    except Exception as e:
-        print(e)
-        raise HTTPException(status_code=500, detail=f"Failed to query refresh token: {e}")
+    response = supabase_client.table("users").select("refresh_token").eq("id",user_id).execute()
+    if len(response.data) == 0:
+        return None
+    refresh_token = response.data[0].refresh_token
+    print(refresh_token)
+    return refresh_token
+    
     
 def update_user_refresh_token_in_db(user_id: str, refresh_token:str):
     try:
@@ -168,3 +169,29 @@ def add_refresh_token_headers(request: Request, response: Response) -> None:
     if hasattr(request.state, 'token_refresh_info') and request.state.token_refresh_info.token_was_refreshed:
         response.headers["X-New-Access-Token"] = request.state.token_refresh_info.new_access_token
         response.headers["X-Token-Refreshed"] = "true"
+
+def delete_all_user_vectors(user_id: str):
+    
+    try:
+        index = pc_client.Index(pinecone_index_name)
+        
+        delete_response = index.delete(
+            filter={
+                "user_id": {"$eq": user_id}
+            },
+            namespace="__default__"
+        )
+        
+        return {
+            "success": True,
+            "message": f"Successfully deleted all vectors for user_id: {user_id}",
+            "response": delete_response
+        }
+        
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "message": "Failed to delete vectors. You may need to use the batch deletion method."
+        }
+

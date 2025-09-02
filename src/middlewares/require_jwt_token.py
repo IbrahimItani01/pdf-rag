@@ -45,12 +45,12 @@ def validate_jwt_and_session(request: Request) -> UserInfoFromJWT:
         try:
             user_refresh_token = query_user_refresh_token(user_id)
             new_session = retrieve_new_session(user_refresh_token)
-            
+            print(new_session)
             update_user_refresh_token_in_db(user_id, new_session["refresh_token"])
             
             refresh_info.new_access_token = new_session["access_token"]
             refresh_info.token_was_refreshed = True
-            
+            print(new_session["access_token"])
             new_decoded = jwt.decode(
                 new_session["access_token"], 
                 signing_key, 

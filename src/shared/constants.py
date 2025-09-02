@@ -13,7 +13,7 @@ empty_page_threshold = 20
 pinecone_index_name="pdf-rag-index"
 
 embedding_supported_model= "text-embedding-3-small"
-completion_supported_model= "gpt-5-nano"
+completion_supported_model= "gpt-5"
 
 # TODO: change when ui login is done :)
 email_confirm_redirect_url = "http://127.0.0.1:8000/health"
