@@ -2,11 +2,11 @@ import uuid
 import tiktoken
 import psycopg2
 import requests
-from fastapi import HTTPException
+from fastapi import HTTPException,Request,Response
 from typing import List, Any
 from jose import jwt
 from src.shared.constants import embedding_supported_model,empty_page_threshold,overlap_tokens_count,file_total_token_limit,base_prompt
-from src.services.gateway_services import fernet
+from src.services.gateway_services import fernet,supabase_client
 from src.services.gateway_services import return_openai_client
 from src.shared.env import get_env_variable
 from src.models.requests import UserInfoFromJWT
@@ -147,3 +147,24 @@ def create_embedding_for_chunk(content: str, user_info: UserInfoFromJWT) -> List
             raise HTTPException(status_code=402, detail="OpenAI API quota exceeded")
         else:
             raise HTTPException(status_code=500, detail=f"Failed to create embedding: {error_msg}")
+        
+def query_user_refresh_token(user_id:str):
+    try:
+        response = supabase_client.table("users").select("refresh_token").eq("id",user_id).execute()
+        return response.data[0].refresh_token
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=500, detail=f"Failed to query refresh token: {e}")
+    
+def update_user_refresh_token_in_db(user_id: str, refresh_token:str):
+    try:
+        response = supabase_client.table("users").update({"refresh_token":refresh_token}).eq("id",user_id).execute
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=500, detail=f"Failed to update refresh token in user's row in DB: {e}")
+    
+def add_refresh_token_headers(request: Request, response: Response) -> None:
+    """Utility function to add refresh token headers if token was refreshed"""
+    if hasattr(request.state, 'token_refresh_info') and request.state.token_refresh_info.token_was_refreshed:
+        response.headers["X-New-Access-Token"] = request.state.token_refresh_info.new_access_token
+        response.headers["X-Token-Refreshed"] = "true"
