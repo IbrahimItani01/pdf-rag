@@ -4,8 +4,9 @@ from typing import List, Dict
 from fastapi import UploadFile, Request, HTTPException
 from src.services.gateway_services import return_openai_client, pc_client, fernet
 from langchain_community.document_loaders import PyPDFLoader
-from src.shared.utils import tokenize_document, generate_file_uuid, is_scanned_or_empty, chunk_document_by_tokens, decrypt_encryption, create_embedding_for_chunk
-from src.shared.constants import file_total_token_limit, embedding_supported_model, pinecone_index_name
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from src.shared.utils import tokenize_document, generate_file_uuid, is_scanned_or_empty, decrypt_encryption, create_embedding_for_chunk
+from src.shared.constants import file_total_token_limit, pinecone_index_name
 from src.models.requests import UserInfoFromJWT
 
 def process_pdf_file(request: Request, file: UploadFile, user_info: UserInfoFromJWT):
@@ -26,8 +27,13 @@ def process_pdf_file(request: Request, file: UploadFile, user_info: UserInfoFrom
         chunks = documents
         
         if token_count > file_total_token_limit:
-            chunks = chunk_document_by_tokens(documents)
-            print(f"PDF split into {len(chunks)} chunks, each <= {file_total_token_limit} tokens.")
+            # Use LangChain’s semantic-aware splitter
+            text_splitter = RecursiveCharacterTextSplitter(
+                chunk_size=1000,   # adjust depending on your needs
+                chunk_overlap=200  # overlap helps keep context
+            )
+            chunks = text_splitter.split_documents(documents)
+            print(f"PDF split into {len(chunks)} semantic chunks using RecursiveCharacterTextSplitter.")
 
         stored_chunks = store_chunks_with_embeddings(chunks, file_uuid, file.filename, user_info=user_info)
         
@@ -53,38 +59,34 @@ def store_chunks_with_embeddings(chunks: List, doc_id: str, filename: str, user_
     index = pc_client.Index(pinecone_index_name)
     vectors_to_upsert = []
     stored_chunks = []
-    failed_chunks = []
     
     for chunk_index, chunk in enumerate(chunks):
         try:
             # Extract content and metadata from chunk
             if hasattr(chunk, 'page_content'):
-                # LangChain Document object
                 content = chunk.page_content
                 page_num = chunk.metadata.get('page', chunk_index + 1)
             else:
-                # Dictionary format
                 content = chunk.get("content", "")
                 page_num = chunk.get("page", chunk_index + 1)
             
-            # Create embedding - this will raise HTTPException if it fails
-            embedding = create_embedding_for_chunk(content, user_info=user_info)
+            # Normalize casing for embeddings
+            content_lower = content.lower().strip()
+
+            embedding = create_embedding_for_chunk(content_lower, user_info=user_info)
             
-            # Create unique vector ID
             vector_id = f"{user_info['user_id']}_{doc_id}_{chunk_index}"
             
-            # Prepare metadata for Pinecone
             metadata = {
                 "doc_id": str(doc_id),
                 "filename": filename,
                 "page_num": page_num,
                 "chunk_index": chunk_index,
-                "original_text": content[:1000],  # Truncate if too long for metadata
-                "token_count": len(content.split()) * 1.3, # Rough token estimate
-                "user_id": user_info["user_id"]   # <-- Add this
+                "original_text": content[:1000],   # preserve original case for display
+                "token_count": len(content.split()) * 1.3, 
+                "user_id": user_info["user_id"]
             }
             
-            # Prepare vector for upsert
             vectors_to_upsert.append({
                 "id": vector_id,
                 "values": embedding,
@@ -101,26 +103,19 @@ def store_chunks_with_embeddings(chunks: List, doc_id: str, filename: str, user_
             raise
         except Exception as e:
             print(f"Error processing chunk {chunk_index}: {e}")
-            failed_chunks.append(chunk_index)
-
             raise HTTPException(status_code=500, detail=f"Failed to process chunk {chunk_index}: {str(e)}")
     
-    # Check if we have any vectors to upsert
     if not vectors_to_upsert:
         raise HTTPException(status_code=500, detail="No chunks were successfully processed")
     
-    # Batch upsert to Pinecone
     try:
-        # Upsert in batches of 100 (Pinecone limit)
         batch_size = 100
         for i in range(0, len(vectors_to_upsert), batch_size):
             batch = vectors_to_upsert[i:i + batch_size]
             index.upsert(vectors=batch)
             print(f"Upserted batch {i//batch_size + 1} with {len(batch)} vectors")
-            
     except Exception as e:
         print(f"Error upserting to Pinecone: {e}")
         raise HTTPException(status_code=500, detail="Failed to store embeddings in Pinecone")
     
     return stored_chunks
-
