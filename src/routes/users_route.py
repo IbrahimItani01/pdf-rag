@@ -9,7 +9,7 @@ from src.models.responses import UserRegisterResponse, UserLoginResponse,Account
 router = APIRouter(
     prefix="/users",       
     tags=["Users"],         
-    dependencies=[Depends(verify_api_key)]  
+    # dependencies=[Depends(verify_api_key)]  
 )
 
 @router.post("/register", response_model=UserRegisterResponse)
@@ -26,7 +26,7 @@ async def login_user_endpoint(
 ):
     return login_user(request,user_data)
 
-@router.post("/delete-account", response_model=AccountDeleteResponse)
+@router.delete("/delete-account", response_model=AccountDeleteResponse)
 async def delete_account_endpoint(
     request: Request,
     user_info: UserInfoFromJWT = Depends(validate_jwt_and_session),
