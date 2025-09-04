@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 class ProcessingMetadata(BaseModel):
     pages: int
     token_count: int
@@ -10,7 +10,22 @@ class UploadFileResponse(BaseModel):
     message: str
     metadata: ProcessingMetadata
     version: str
-    
+
+class FileInfo(BaseModel):
+    """Dedicated model for file listing - cleaner separation of concerns"""
+    file_id: str
+    filename: str
+    file_type: str
+    pages: int
+    token_count: int
+    chunks_stored: int
+    upload_date: Optional[str] = None
+    file_size: Optional[int] = None
+class GetFilesResponse(BaseModel):
+    version: str
+    message: str
+    files: List[FileInfo]  # Use FileInfo instead of ProcessingMetadata
+    total_count: int
 class Source(BaseModel):
     doc_id: str
     page: int
