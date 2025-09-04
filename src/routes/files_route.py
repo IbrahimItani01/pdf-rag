@@ -1,17 +1,18 @@
 from fastapi import APIRouter, Request, Depends, UploadFile, Response
 from src.services.upload_file_service import process_pdf_file
 from src.services.query_file_services import process_file_query
+from src.services.files_services import get_files_service
 from src.middlewares.verify_api_key import verify_api_key
 from src.middlewares.validate_upload_file import validate_uploaded_file
 from src.middlewares.require_jwt_token import validate_jwt_and_session
-from src.models.responses import UploadFileResponse,QueryFileResponse
+from src.models.responses import UploadFileResponse,QueryFileResponse,GetFilesResponse
 from src.models.requests import UserInfoFromJWT,QueryFileRequest
 from src.shared.utils import add_refresh_token_headers
 
 router = APIRouter(
     prefix="/files",       
     tags=["Files"],         
-    dependencies=[Depends(verify_api_key)]  # Removed validate_jwt_and_session from here
+    # dependencies=[Depends(verify_api_key)]  # Removed validate_jwt_and_session from here
 )
 
 @router.post("/upload", response_model=UploadFileResponse)
@@ -35,6 +36,18 @@ async def query_file(
     user_info: UserInfoFromJWT = Depends(validate_jwt_and_session),
 ):
     result = process_file_query(request, query_info, user_info)
+    
+    add_refresh_token_headers(request, response)
+    
+    return result
+
+@router.get("/",response_model=GetFilesResponse)
+async def get_files(
+    request: Request,
+    response: Response,
+    user_info: UserInfoFromJWT = Depends(validate_jwt_and_session),
+):
+    result = get_files_service(request, user_info)
     
     add_refresh_token_headers(request, response)
     
